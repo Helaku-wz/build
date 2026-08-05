@@ -1,0 +1,76 @@
+# Copyright (c) 2026 vivo Mobile Communication Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/default_targets.gni")
+import("//build/templates/board.gni")
+
+_sysroot = exec_script("//build/scripts/get_sysroot.py",
+                       [ "riscv-none-elf-gcc" ],
+                       "string")
+
+blueos_board("esp32c6_devkitc_1") {
+  kernel_config = {
+    cflags = [
+      "--static",
+      "-fshort-enums",
+      "-fsigned-char",
+      "-nostdlib",
+      "-isystem",
+      "${_sysroot}/include",
+    ]
+    ldflags = [
+      "-nostartfiles",
+      "-Wl,-gc-sections",
+      "-Wl,-z,norelro",
+    ]
+    rustflags = [
+      "--cfg",
+      "target_board=\"esp32c6_devkitc_1\"",
+      "-Zemit-stack-sizes",
+      "-Crelocation-model=static",
+      "-Clinker=riscv-none-elf-gcc",
+    ]
+    foreach(item, ldflags) {
+      rustflags += [ "-Clink-arg=${item}" ]
+    }
+  }
+
+  # ESP32-C6 is rv32imac (has the atomic extension), whereas C3 was rv32imc.
+  app_config = {
+    rustflags = [
+      "--cfg",
+      "target_board=\"esp32c6_devkitc_1\"",
+      "-Clinker=clang",
+      "-Clink-arg=-fuse-ld=lld",
+      "-Clink-arg=--target=riscv32",
+      "-Clink-arg=-march=rv32imac",
+      "-Clink-arg=-mabi=ilp32",
+      "-Clink-arg=-Wl,-z,norelro",
+    ]
+  }
+
+  # NET 已通(CONFIG_ENABLE_NET=y,板级 WiFi 中断 + 电源/时钟已就绪),
+  # agent_loop/wifi_example 可构建。default 对齐 C3:shell + wifi_example +
+  # agent_loop。fs_example 仍可选(其 fatfs 分支受 #[cfg(virtio)] 门控,C6 关)。
+  default = [
+    "//apps/shell:shell",
+  ]
+
+  _check_all = check_all_on_virtual_board + clippy_all_on_virtual_board
+  check_all = filter_exclude(_check_all,
+                             [
+                               "//kernel/adapter*",
+                               "//kernel/loader*",
+                             ])
+}
