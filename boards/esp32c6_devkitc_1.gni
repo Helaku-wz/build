@@ -34,20 +34,15 @@ qemu_extra_args = []
 qemu_net_args = []
 qemu_block_args = []
 
-# Bootloader / partition table for the esp32 image merge stage. C6 assets are
-# fetched at image-build time (only needed for `unittest_runner` / Wokwi
-# firmware.bin, not for `:blueos` ELF compilation). If the release below lacks a
-# c6 variant, swap in a locally generated pair (espflash/esp-idf) at stage B.
-qemu_esp32_bootloader_bin = "https://github.com/vivoblueos/toolchain/releases/download/v0.8.0/esp32c6-bootloader.bin"
-qemu_esp32_partition_table_bin = "https://github.com/vivoblueos/toolchain/releases/download/v0.8.0/esp32c6-partition-table.bin"
-qemu_use_esp32_loader = true
-
-# WiFi/net 驱动依赖。与 seeed_xiao_esp32c3.gni 同构,仅把 c3 专属 crate 换成 c6:
+# WiFi/net driver dependencies. Structurally identical to seeed_xiao_esp32c3.gni,
+# only swapping the c3-specific crates for c6:
 #   esp-wifi-sys-esp32c3-0.2.0 → esp-wifi-sys-esp32c6-0.2.0
 #   esp32c3-0.32.2            → esp32c6-0.23.0
-# 其余 7 个(esp-hal/esp-phy/esp-radio-rtos-driver/esp-rom-sys/esp-sync/smoltcp/enumset)
-# 版本号与 C3 共用同一 vendor 目录。这些 crate 仅被 #[cfg(enable_net)] 的 net 模块
-# 引用;agent_loop 的 app.conf 开了 CONFIG_ENABLE_NET=y 才会真正链入 kernel。
+# The remaining 7 (esp-hal/esp-phy/esp-radio-rtos-driver/esp-rom-sys/esp-sync/
+# smoltcp/enumset) share the same vendor directory and version numbers as C3.
+# These crates are referenced only by the net module under #[cfg(enable_net)];
+# they are only actually linked into the kernel when agent_loop's app.conf sets
+# CONFIG_ENABLE_NET=y.
 board_deps = [
   "//external/vendor/enumset-1.1.13:enumset",
   "//external/vendor/esp-hal-1.1.1:esp_hal",
