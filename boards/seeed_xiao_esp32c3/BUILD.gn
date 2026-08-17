@@ -62,6 +62,7 @@ blueos_board("seeed_xiao_esp32c3") {
     "//apps/shell:shell",
     "//apps/example/framebuffer:fb_example",
     "//apps/example/slint_ui:slint_ui_example",
+    "//apps/example/slint_in_fly:slint_in_fly",
   ]
   _check_all = check_all_on_virtual_board + clippy_all_on_virtual_board
   check_all = filter_exclude(_check_all, [ "//kernel/adapter*" ])
